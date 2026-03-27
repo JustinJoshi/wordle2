@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wordle Filter</title>
+  <style>
+    :root {
+      --bg: #121213;
+      --panel: #1a1a1b;
+      --text: #f8f8f8;
+      --muted: #9ea0a3;
+      --tile-border: #3a3a3c;
+      --none: #121213;
+      --gray: #787c7e;
+      --yellow: #c9b458;
+      --green: #6aaa64;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 24px 12px;
+    }
+
+    .app {
+      width: min(760px, 100%);
+      display: grid;
+      gap: 18px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid #2b2b2e;
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .top-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.3rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .hint {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .tiles {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(52px, 1fr));
+      gap: 10px;
+      max-width: 440px;
+    }
+
+    .tile {
+      display: grid;
+      place-items: center;
+      aspect-ratio: 1 / 1;
+      border: 2px solid var(--tile-border);
+      border-radius: 8px;
+      background: var(--none);
+      transition: background 0.15s ease, border-color 0.15s ease;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .tile.none {
+      background: var(--none);
+      border-color: var(--tile-border);
+    }
+
+    .tile.gray {
+      background: var(--gray);
+      border-color: var(--gray);
+    }
+
+    .tile.yellow {
+      background: var(--yellow);
+      border-color: var(--yellow);
+    }
+
+    .tile.green {
+      background: var(--green);
+      border-color: var(--green);
+    }
+
+    .tile input {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      outline: none;
+      text-align: center;
+      font-weight: 700;
+      font-size: clamp(1.5rem, 2vw, 1.9rem);
+      text-transform: uppercase;
+      background: transparent;
+      color: #fff;
+      caret-color: #fff;
+    }
+
+    .tile.none input:placeholder-shown {
+      color: #7b7d80;
+    }
+
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid #4b4d52;
+      border-radius: 999px;
+      padding: 8px 14px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    .btn:hover {
+      border-color: #83858c;
+    }
+
+    .count {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .excluded-section {
+      margin-top: 14px;
+      display: grid;
+      gap: 8px;
+      max-width: 560px;
+    }
+
+    .excluded-label {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .excluded-input {
+      width: 100%;
+      border: 1px solid #4b4d52;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 0.95rem;
+      background: #111214;
+      color: var(--text);
+      text-transform: uppercase;
+    }
+
+    .excluded-input::placeholder {
+      color: #7b7d80;
+      text-transform: none;
+    }
+
+    .excluded-input:focus {
+      outline: 1px solid #7d8088;
+      border-color: #7d8088;
+    }
+
+    .excluded-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      min-height: 28px;
+    }
+
+    .excluded-chip {
+      border: 0;
+      border-radius: 999px;
+      background: var(--gray);
+      color: #fff;
+      font-size: 0.82rem;
+      letter-spacing: 0.04em;
+      padding: 5px 10px;
+      cursor: pointer;
+      text-transform: uppercase;
+    }
+
+    .excluded-chip:hover {
+      filter: brightness(1.1);
+    }
+
+    .results {
+      border: 1px solid #2d2f33;
+      border-radius: 10px;
+      padding: 12px;
+      max-height: 60vh;
+      overflow-y: auto;
+      background: #141416;
+    }
+
+    .word-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+      gap: 8px 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-size: 0.92rem;
+    }
+
+    .empty-state {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="panel">
+      <div class="top-row">
+        <h1>Wordle Filter</h1>
+        <p class="hint">Type letters, then click tiles to cycle none -> gray -> yellow -> green.</p>
+      </div>
+
+      <div id="tiles" class="tiles" aria-label="Word input tiles"></div>
+
+      <div class="controls">
+        <button id="clearBtn" class="btn" type="button">Clear</button>
+        <p id="count" class="count">Loading words...</p>
+      </div>
+
+      <div class="excluded-section">
+        <p class="excluded-label">Excluded letters (gray bank)</p>
+        <input
+          id="excludedInput"
+          class="excluded-input"
+          type="text"
+          placeholder="Type letters to exclude..."
+          aria-label="Excluded letters"
+          autocomplete="off"
+          autocorrect="off"
+          spellcheck="false"
+        />
+        <div id="excludedChips" class="excluded-chips" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="results">
+        <ul id="wordList" class="word-list" aria-live="polite"></ul>
+        <p id="emptyState" class="empty-state" hidden>No words match the current constraints.</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="./app.js" defer></script>
+</body>
+</html>
